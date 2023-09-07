@@ -9,11 +9,17 @@ KV = '''
 MDScreen:
 
     MDLabel:
-        text: "Test"
+        text: "Braille"
+        halign: "center"
+        font_style: "H1"
+        pos_hint: {"center_y": .9}
+
 
     MDIconButton:
-        icon: "language-python"
-        pos_hint: {"center_x": .5, "center_y": .5}
+        icon: "—Pngtree—start button rounded futuristic hologram_5426086.png"
+        icon_size: "750sp"
+        pos_hint: {"center_x": .5, "center_y": .4}
+
 '''
 
 class test(MDApp):
