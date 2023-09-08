@@ -21,7 +21,7 @@ root:
             icon: "—Pngtree—start button rounded futuristic hologram_5426086.png"
             icon_size: "750sp"
             pos_hint: {"center_x": .5, "center_y": .4}
-            on_release: root.generate_number()
+            on_press: root.generate_number()
         MDLabel:
             id: random_label #sets this as its id so that i know where its changing
             text:"-"
