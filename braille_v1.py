@@ -4,10 +4,10 @@ import subprocess
 from time import strftime
 import datetime   #date and time for user
 import pyttsx3 as tts   #text to speech package
-import wolframalpha as wolf
-import json
+#import wolframalpha as wolf
+#import json
 import requests
-import wikipedia
+#import wikipedia
 import webbrowser
 import os
 from gtts import gTTS
@@ -157,12 +157,34 @@ def authenticate_with_gmail_api():
     return service
 
 def read_emails(service):
-    # Implement code to read emails using Gmail API
-    pass
+    try:
+        messages = service.users().messages().list(userId='me', labelIds=['INBOX']).execute()
+        message_list = messages.get('messages', [])
+        if not message_list:
+            response = "You have no emails."
+        else:
+            response = "Here are your emails:"
+            for message in message_list:
+                msg = service.users().messages().get(userId='me', id=message['id']).execute()
+                response += f"Subject: {msg['subject']}. "
+    except Exception as e:
+        print(f"Error while reading emails: {str(e)}")
+        response = "An error occurred while reading emails."
+
+    speak_response(response)
 
 def compose_email(service, to, subject, message):
-    # Implement code to compose and send an email using Gmail API
-    pass
+    try:
+        message = {
+            'raw': f"From: me\r\nTo: {to}\r\nSubject: {subject}\r\n\r\n{message}"
+        }
+        service.users().messages().send(userId='me', body=message).execute()
+        response = "Email sent."
+    except Exception as e:
+        print(f"Error while sending email: {str(e)}")
+        response = "An error occurred while sending the email."
+
+    speak_response(response)
 
 def set_timer(seconds):
     command = f'adb shell "am start -a android.intent.action.SET_TIMER -e length {seconds}"'
