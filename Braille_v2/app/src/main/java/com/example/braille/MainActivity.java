@@ -9,10 +9,14 @@ import android.util.Log;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.app.Activity;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.SystemClock;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -22,27 +26,39 @@ import java.util.Locale;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
-public class MainActivity extends AppCompatActivity{
-    public MainActivity(){
-    }
+public class MainActivity extends Activity{
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main); // Replace with your layout file
+        initializeSpeechRecognizer();
+        initializeTextToSpeech();
+        Button b = findViewById(R.id.start);
+        b.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startListening();
+            }
+        });
+        //System.out.println("Test extra call");
     }
-    private Context context;
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == 100 && resultCode == RESULT_OK)
+        {
+            String command = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0).toString();
+            System.out.println("command = " + command);
+        }
+    }
+
     private SpeechRecognizer speechRecognizer;
     private TextToSpeech textToSpeech;
 
-    public MainActivity(Context context) {
-        this.context = context;
-        initializeSpeechRecognizer();
-        initializeTextToSpeech();
-    }
-
     // Dylan, from here down be sure to update
     private void initializeSpeechRecognizer() {
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context);
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
         speechRecognizer.setRecognitionListener(new RecognitionListener() {
             @Override
             public void onReadyForSpeech(Bundle params) {
@@ -80,8 +96,9 @@ public class MainActivity extends AppCompatActivity{
                 ArrayList<String> voiceResults = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 if (voiceResults != null && voiceResults.size() > 0) {
                     String command = voiceResults.get(0);
-                    talk("You said: " + command);
-                    processCommand(command);
+                    System.out.println("command = " + command);
+                    //talk("You said: " + command);
+                    //processCommand(command);
                 }
             }
 
@@ -98,7 +115,7 @@ public class MainActivity extends AppCompatActivity{
     }
 
     private void initializeTextToSpeech() {
-        textToSpeech = new TextToSpeech(context, status -> {
+        textToSpeech = new TextToSpeech(this, status -> {
             if (status == TextToSpeech.SUCCESS) {
                 textToSpeech.setLanguage(Locale.US);
             } else {
@@ -113,7 +130,9 @@ public class MainActivity extends AppCompatActivity{
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
 
         try {
-            speechRecognizer.startListening(intent);
+            System.out.println("Speech recognizer called");
+            startActivityForResult(intent,100);
+            //speechRecognizer.startListening(intent);
         } catch (Exception e) {
             Log.e("SpeechRecognizer", "Recognition failed: " + e.getMessage());
         }
