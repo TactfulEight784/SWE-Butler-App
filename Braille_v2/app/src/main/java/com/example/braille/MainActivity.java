@@ -10,6 +10,7 @@ import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.os.Handler;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -22,10 +23,13 @@ public class MainActivity extends Activity {
     private TextToSpeech textToSpeech;
     private SpeechRecognizer speechRecognizer;
     private CommandProcessor commandProcessor;
-
+    private boolean isListeningTimeout = false; // Control variable to track timeout
+    private final long TIMEOUT_DURATION = 5000; // Timeout duration in milliseconds
     private final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
     private String keyword = "destroy";
     private boolean isListening = false;
+    private Handler timeoutHandler = new Handler();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,6 +77,9 @@ public class MainActivity extends Activity {
             if (speechRecognizer != null) {
                 speechRecognizer.startListening(new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH));
                 isListening = true;
+                isListeningTimeout = false; // Reset timeout flag when starting to listen
+                // Schedule a timeout handler
+                timeoutHandler.postDelayed(timeoutRunnable, TIMEOUT_DURATION);
             }
         }
     }
@@ -82,7 +89,14 @@ public class MainActivity extends Activity {
             isListening = false;
         }
     }
-
+    private Runnable timeoutRunnable = new Runnable() {
+        @Override
+        public void run() {
+            isListeningTimeout = true;
+            // If no speech is detected and it times out, restart listening
+            startListening();
+        }
+    };
     private class MyRecognitionListener implements android.speech.RecognitionListener {
         @Override
         public void onReadyForSpeech(Bundle params) {
