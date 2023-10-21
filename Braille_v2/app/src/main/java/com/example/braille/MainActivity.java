@@ -1,12 +1,16 @@
 package com.example.braille;
+
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
+import android.telecom.TelecomManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -29,7 +33,7 @@ public class MainActivity extends Activity {
     private String keyword = "destroy";
     private boolean isListening = false;
     private Handler timeoutHandler = new Handler();
-
+    private final int CALL_SCREENING_PERMISSION_REQUEST = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,25 +46,43 @@ public class MainActivity extends Activity {
         b.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (isListening){
+                if (isListening) {
                     stopListening();
-                }else {
+                } else {
                     startListening();
                 }
             }
         });
-        commandProcessor = new CommandProcessor(textToSpeech); // Pass the TextToSpeech object
+        commandProcessor = new CommandProcessor(textToSpeech, this);
+        checkAndRequestCallScreeningPermission();
+    }
 
+    private void checkAndRequestCallScreeningPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ANSWER_PHONE_CALLS) != PackageManager.PERMISSION_GRANTED) {
+                // Request the ANSWER_PHONE_CALLS permission
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ANSWER_PHONE_CALLS}, CALL_SCREENING_PERMISSION_REQUEST);
+            }
+        }
     }
 
     private void initializeTextToSpeech() {
-        textToSpeech = new TextToSpeech(this, status -> {
-            if (status == TextToSpeech.SUCCESS) {
-                textToSpeech.setLanguage(Locale.US);
-            } else {
-                Log.e("TextToSpeech", "Initialization failed");
+        textToSpeech = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status == TextToSpeech.SUCCESS) {
+                    textToSpeech.setLanguage(Locale.US);
+                } else {
+                    Log.e("TextToSpeech", "Initialization failed");
+                }
             }
         });
+    }
+
+    private void speak(String text) {
+        if (textToSpeech != null) {
+            textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+        }
     }
 
     private void initializeSpeechRecognizer() {
@@ -83,12 +105,14 @@ public class MainActivity extends Activity {
             }
         }
     }
+
     private void stopListening() {
         if (speechRecognizer != null) {
             speechRecognizer.stopListening();
             isListening = false;
         }
     }
+
     private Runnable timeoutRunnable = new Runnable() {
         @Override
         public void run() {
@@ -97,6 +121,7 @@ public class MainActivity extends Activity {
             startListening();
         }
     };
+
     private class MyRecognitionListener implements android.speech.RecognitionListener {
         @Override
         public void onReadyForSpeech(Bundle params) {
@@ -135,9 +160,9 @@ public class MainActivity extends Activity {
                 String spokenText = result.get(0);
                 // Process the spoken text (e.g., by sending it to your command processor)
                 commandProcessor.processCommand(spokenText);
-                if (spokenText.toLowerCase().contains(keyword)){
+                if (spokenText.toLowerCase().contains(keyword)) {
                     stopListening();
-                }else{
+                } else {
                     startListening();
                 }
             }
@@ -156,20 +181,55 @@ public class MainActivity extends Activity {
 
     public class CommandProcessor {
         private TextToSpeech textToSpeech;
+        private Context context;
+        private TelecomManager telecomManager;
 
-        public CommandProcessor(TextToSpeech textToSpeech) {
+        public CommandProcessor(TextToSpeech textToSpeech, Context context) {
             this.textToSpeech = textToSpeech;
+            this.context = context;
+            this.telecomManager = (TelecomManager) context.getSystemService(Context.TELECOM_SERVICE);
+
         }
 
         public void processCommand(String command) {
             if (command.contains("test")) {
-                Log.d("test",command);
-                String textToRepeat = command;//.substring(command.indexOf("repeat this") + "repeat this".length());
+                String textToRepeat = command;
                 repeatText(textToRepeat);
+            } else if (command.toLowerCase().contains("answer phone call")) {
+                answerPhoneCall();
             } else {
                 // Implement other command processing logic
             }
         }
+
+        private void answerPhoneCall() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (ContextCompat.checkSelfPermission(context, Manifest.permission.ANSWER_PHONE_CALLS) == PackageManager.PERMISSION_GRANTED) {
+                    if (telecomManager != null) {
+                        telecomManager.acceptRingingCall();
+                        speak("Call answered.");
+                    }
+                } else {
+                    speak("Permission to answer phone calls is not granted.");
+                }
+            } else {
+                speak("Answering phone calls is not supported on this device.");
+            }
+        }
+        /**private void hangUpCall() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (ContextCompat.checkSelfPermission(context, Manifest.permission.ANSWER_PHONE_CALLS) == PackageManager.PERMISSION_GRANTED) {
+                    if (telecomManager != null) {
+                        telecomManager.endCall();
+                        speak("Call hung up.");
+                    }
+                } else {
+                    speak("Permission to end phone calls is not granted.");
+                }
+            } else {
+                speak("Ending phone calls is not supported on this device.");
+            }
+        }**/
 
         private void repeatText(String text) {
             if (text != null && !text.isEmpty()) {
@@ -178,6 +238,19 @@ public class MainActivity extends Activity {
         }
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == CALL_SCREENING_PERMISSION_REQUEST) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission granted. Implement your call answering logic here.
+                commandProcessor.answerPhoneCall();
+            } else {
+                // Permission denied. Handle this case (e.g., show a message to the user).
+                // You may not be able to answer phone calls without the permission.
+                speak("Permission to answer phone calls was denied.");
+            }
+        }
+    }
 
     @Override
     protected void onDestroy() {
