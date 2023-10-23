@@ -222,6 +222,7 @@ public class MainActivity extends Activity {
             else if (command.contains("make a call to")) {
                 String contactName = extractContactName(command);
                 String phoneNumber = getPhoneNumberFromContact(contactName);
+                makePhoneCall(phoneNumber);
             }
             else if (command.startsWith("search YouTube for")) {
                 String query = command.substring("search YouTube for".length()).trim();
