@@ -306,7 +306,7 @@ public class MainActivity extends Activity {
                 GoogleCredential credential = new GoogleCredential.Builder()
                         .setJsonFactory(...)
                     .setTransport(...)
-                    .setClientSecrets("AIzaSyDZV4vQljbDv6pcGU1BxwS40zugLwyShNQ")
+                    .setClientSecrets("YOUR_API_KEY")
                         .build();
 
                 // Initialize the YouTube object
