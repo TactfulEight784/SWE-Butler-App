@@ -15,12 +15,23 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.os.Handler;
+import android.net.Uri;
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.services.youtube.YouTube;
+import com.google.api.services.youtube.model.SearchListResponse;
+import com.google.api.services.youtube.model.SearchResult;
+import com.google.api.services.youtube.model.SearchResultSnippet;
+import com.google.api.services.youtube.model.Video;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AppCompatActivity;
 
 import java.util.ArrayList;
 import java.util.Locale;
+import java.io.IOException;
+import java.util.List;
 
 public class MainActivity extends Activity {
 
@@ -195,14 +206,23 @@ public class MainActivity extends Activity {
             if (command.contains("test")) {
                 String textToRepeat = command;
                 repeatText(textToRepeat);
-            } else if (command.toLowerCase().contains("answer phone call")) {
+            }
+            else if (command.toLowerCase().contains("answer phone call")) {
                 answerPhoneCall();
             }
             else if (command.toLowerCase().contains("reject call")) {
                 RejectCall();
             }
+            else if (command.contains("make a call to")) {
+                String contactName = extractContactName(command);
+                String phoneNumber = getPhoneNumberFromContact(contactName);
+            }
+            else if (command.startsWith("search YouTube for")) {
+                String query = command.substring("search YouTube for".length()).trim();
+                searchYouTube(query);
+            }
             else {
-                // Implement other command processing logic
+                speakResponse("Command not recognized");
             }
         }
 
@@ -234,10 +254,101 @@ public class MainActivity extends Activity {
                 speak("Ending phone calls is not supported on this device.");
             }
         }
+        private String extractContactName(String command) {
+            // Define a regular expression pattern to match names (assuming first and last name)
+            String namePattern = "([A-Z][a-z]+)\\s+([A-Z][a-z]+)";
+            Pattern pattern = Pattern.compile(namePattern);
+            Matcher matcher = pattern.matcher(command);
+
+            if (matcher.find()) {
+                // If a name is found return it
+                return matcher.group(0);
+            } else {
+                // No name found in the command
+                return null;
+            }
+            return null; // Replace with actual logic
+        }
+
+        private String getPhoneNumberFromContact(String contactName) {
+            ContentResolver contentResolver = getContentResolver();
+            String phoneNumber = null;
+
+            Uri uri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
+            String[] projection = {ContactsContract.CommonDataKinds.Phone.NUMBER};
+            String selection = ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " = ?";
+            String[] selectionArgs = {contactName};
+
+            Cursor cursor = contentResolver.query(uri, projection, selection, selectionArgs, null);
+
+            if (cursor != null && cursor.moveToFirst()) {
+                phoneNumber = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                cursor.close();
+            }
+
+            return phoneNumber;
+        }
+
+        private void makePhoneCall(String phoneNumber) {
+            String uri = "tel:" + phoneNumber;
+            Intent intent = new Intent(Intent.ACTION_CALL, Uri.parse(uri));
+            startActivity(intent);
+        }
 
         private void repeatText(String text) {
             if (text != null && !text.isEmpty()) {
                 textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+            }
+        }
+        private void searchYouTube(String query) {
+            try {
+                // Create a GoogleCredential using your API key
+                GoogleCredential credential = new GoogleCredential.Builder()
+                        .setJsonFactory(...)
+                    .setTransport(...)
+                    .setClientSecrets("YOUR_API_KEY")
+                        .build();
+
+                // Initialize the YouTube object
+                YouTube youtube = new YouTube.Builder(credential.getTransport(), credential.getJsonFactory(), null)
+                        .setApplicationName("YouTubeSearchApp")
+                        .build();
+
+                // Call the YouTube API to perform the search
+                YouTube.Search.List search = youtube.search().list("id,snippet");
+                search.setKey("YOUR_API_KEY");
+                search.setQ(query);
+                search.setType("video");
+
+                SearchListResponse searchResponse = search.execute();
+                List<SearchResult> searchResults = searchResponse.getItems();
+
+                if (searchResults != null && !searchResults.isEmpty()) {
+                    SearchResult firstResult = searchResults.get(0);
+                    SearchResultSnippet snippet = firstResult.getSnippet();
+                    String videoId = firstResult.getId().getVideoId();
+                    String title = snippet.getTitle();
+                    String description = snippet.getDescription();
+
+                    // Play the first search result
+                    playYouTubeVideo(videoId);
+                    speakResponse("Playing video: " + title + ". Description: " + description);
+                } else {
+                    speakResponse("No matching videos found on YouTube.");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        private void playYouTubeVideo(String videoId) {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=" + videoId));
+            intent.setPackage("com.google.android.youtube");
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            if (intent.resolveActivity(getPackageManager()) != null) {
+                startActivity(intent);
+            } else {
+                speakResponse("YouTube app not found on your device.");
             }
         }
     }
