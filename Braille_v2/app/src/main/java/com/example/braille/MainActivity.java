@@ -197,7 +197,11 @@ public class MainActivity extends Activity {
                 repeatText(textToRepeat);
             } else if (command.toLowerCase().contains("answer phone call")) {
                 answerPhoneCall();
-            } else {
+            }
+            else if (command.toLowerCase().contains("reject call")) {
+                RejectCall();
+            }
+            else {
                 // Implement other command processing logic
             }
         }
@@ -216,12 +220,12 @@ public class MainActivity extends Activity {
                 speak("Answering phone calls is not supported on this device.");
             }
         }
-        /**private void hangUpCall() {
+        private void RejectCall() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.ANSWER_PHONE_CALLS) == PackageManager.PERMISSION_GRANTED) {
                     if (telecomManager != null) {
                         telecomManager.endCall();
-                        speak("Call hung up.");
+                        speak("Call rejected.");
                     }
                 } else {
                     speak("Permission to end phone calls is not granted.");
@@ -229,7 +233,7 @@ public class MainActivity extends Activity {
             } else {
                 speak("Ending phone calls is not supported on this device.");
             }
-        }**/
+        }
 
         private void repeatText(String text) {
             if (text != null && !text.isEmpty()) {
