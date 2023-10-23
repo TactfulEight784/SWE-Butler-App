@@ -1,0 +1,2 @@
+project('Braille_v24').projectDir = new File(rootDir, 'Braille_v2/')
+include ':Braille_v24'

@@ -1,12 +1,18 @@
 package com.example.braille;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.provider.ContactsContract;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
@@ -14,24 +20,22 @@ import android.telecom.TelecomManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.os.Handler;
-import android.net.Uri;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.SearchListResponse;
 import com.google.api.services.youtube.model.SearchResult;
 import com.google.api.services.youtube.model.SearchResultSnippet;
-import com.google.api.services.youtube.model.Video;
 
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import android.support.v4.app.ActivityCompat;
-import android.support.v7.app.AppCompatActivity;
-
-import java.util.ArrayList;
-import java.util.Locale;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainActivity extends Activity {
 
@@ -222,7 +226,7 @@ public class MainActivity extends Activity {
                 searchYouTube(query);
             }
             else {
-                speakResponse("Command not recognized");
+                speak("Command not recognized");
             }
         }
 
@@ -267,9 +271,10 @@ public class MainActivity extends Activity {
                 // No name found in the command
                 return null;
             }
-            return null; // Replace with actual logic
+            // Replace with actual logic
         }
 
+        @SuppressLint("Range")
         private String getPhoneNumberFromContact(String contactName) {
             ContentResolver contentResolver = getContentResolver();
             String phoneNumber = null;
@@ -332,9 +337,9 @@ public class MainActivity extends Activity {
 
                     // Play the first search result
                     playYouTubeVideo(videoId);
-                    speakResponse("Playing video: " + title + ". Description: " + description);
+                    speak("Playing video: " + title + ". Description: " + description);
                 } else {
-                    speakResponse("No matching videos found on YouTube.");
+                    speak("No matching videos found on YouTube.");
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -348,7 +353,7 @@ public class MainActivity extends Activity {
             if (intent.resolveActivity(getPackageManager()) != null) {
                 startActivity(intent);
             } else {
-                speakResponse("YouTube app not found on your device.");
+                speak("YouTube app not found on your device.");
             }
         }
     }
