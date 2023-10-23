@@ -32,6 +32,7 @@ import com.google.api.services.youtube.model.SearchResultSnippet;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -49,6 +50,7 @@ public class MainActivity extends Activity {
     private boolean isListening = false;
     private Handler timeoutHandler = new Handler();
     private final int CALL_SCREENING_PERMISSION_REQUEST = 2;
+    private static final String API_KEY = "YOUR_YOUTUBE_API_KEY";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -308,11 +310,7 @@ public class MainActivity extends Activity {
         private void searchYouTube(String query) {
             try {
                 // Create a GoogleCredential using your API key
-                GoogleCredential credential = new GoogleCredential.Builder()
-                        .setJsonFactory(...)
-                    .setTransport(...)
-                    .setClientSecrets("AIzaSyDZV4vQljbDv6pcGU1BxwS40zugLwyShNQ")
-                        .build();
+                GoogleCredential credential = new GoogleCredential().setAccessToken(API_KEY);
 
                 // Initialize the YouTube object
                 YouTube youtube = new YouTube.Builder(credential.getTransport(), credential.getJsonFactory(), null)
@@ -320,10 +318,10 @@ public class MainActivity extends Activity {
                         .build();
 
                 // Call the YouTube API to perform the search
-                YouTube.Search.List search = youtube.search().list("id,snippet");
+                YouTube.Search.List search = youtube.search().list(Collections.singletonList("id,snippet"));
                 search.setKey("YOUR_API_KEY");
                 search.setQ(query);
-                search.setType("video");
+                search.setType(Collections.singletonList("video"));
 
                 SearchListResponse searchResponse = search.execute();
                 List<SearchResult> searchResults = searchResponse.getItems();
