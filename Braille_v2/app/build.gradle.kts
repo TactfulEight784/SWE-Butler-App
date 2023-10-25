@@ -5,7 +5,9 @@ plugins {
 android {
     namespace = "com.example.braille"
     compileSdk = 33
-
+    packagingOptions {
+        exclude("META-INF/DEPENDENCIES")
+    }
     defaultConfig {
         applicationId = "com.example.braille"
         minSdk = 33
@@ -32,7 +34,7 @@ android {
 }
 
 dependencies {
-
+    implementation("net.zetetic:android-database-sqlcipher:4.4.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.9.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
