@@ -74,12 +74,21 @@ public class MainActivity extends Activity {
             }
         });
         commandProcessor = new CommandProcessor(textToSpeech, this);
+        checkAndRequestCallScreeningPermission();
         dbHelper.getWritableDatabase("EC4A783A23191FA19A2EB69864849");
         String name = "Izaiah Fleming";
         String email = "IxF69@gmail.com";
         String phone = "1234567890";
 
         dbHelper.insertData(name, email, phone);
+    }
+    private void checkAndRequestCallScreeningPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ANSWER_PHONE_CALLS) != PackageManager.PERMISSION_GRANTED) {
+                // Request the ANSWER_PHONE_CALLS permission
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ANSWER_PHONE_CALLS}, CALL_SCREENING_PERMISSION_REQUEST);
+            }
+        }
     }
 
     private void initializeTextToSpeech() {
