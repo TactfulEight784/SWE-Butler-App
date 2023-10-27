@@ -53,7 +53,6 @@ public class MainActivity extends Activity {
     private String keyword = "destroy";
     private boolean isListening = false;
     private Handler timeoutHandler = new Handler();
-    private static final String API_KEY = "YOUR_YOUTUBE_API_KEY";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -125,7 +124,7 @@ public class MainActivity extends Activity {
                 speechRecognizer.startListening(new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH));
                 isListening = true;
                 isListeningTimeout = false; // Reset timeout flag when starting to listen
-                // Schedule a timeout handler
+                // Schedule the timeout handler
                 timeoutHandler.postDelayed(timeoutRunnable, TIMEOUT_DURATION);
             }
         }
