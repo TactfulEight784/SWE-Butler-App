@@ -21,6 +21,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
+
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -37,6 +38,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+
+import android.os.Handler;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import java.util.ArrayList;
+import java.util.Locale;
 
 
 public class MainActivity extends Activity {
@@ -219,13 +229,13 @@ public class MainActivity extends Activity {
             if (command.contains("test")) {
                 String textToRepeat = command;
                 repeatText(textToRepeat);
-            }
-            else if (command.toLowerCase().contains("answer phone call")) {
+            } else if (command.toLowerCase().contains("answer phone call")) {
                 answerPhoneCall();
             }
             else if (command.toLowerCase().contains("reject call")) {
                 rejectCall();
             }
+
             else if (command.startsWith("make a call to")) {
                 String contactName = extractContactName(command);
                 if (contactName != null) {
@@ -278,6 +288,7 @@ public class MainActivity extends Activity {
             }
         }
 
+
         private void makePhoneCall(String phoneNumber) {
             if (phoneNumber != null && !phoneNumber.isEmpty()) {
                 // Check for CALL_PHONE permission
@@ -294,11 +305,13 @@ public class MainActivity extends Activity {
             }
         }
 
+
         private void repeatText(String text) {
             if (text != null && !text.isEmpty()) {
                 textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
             }
         }
+
 
        /** private void searchYouTube(String query) {
             try {
@@ -381,6 +394,7 @@ public class MainActivity extends Activity {
                 speak("YouTube app not found on your device.");
             }
         }**/
+
     }
 
     @Override
