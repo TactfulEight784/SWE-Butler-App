@@ -21,6 +21,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
+
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -39,6 +40,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
+import android.os.Handler;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import java.util.ArrayList;
+import java.util.Locale;
+
+
 public class MainActivity extends Activity {
     private DatabaseHelper dbHelper;
 
@@ -53,7 +63,6 @@ public class MainActivity extends Activity {
     private String keyword = "destroy";
     private boolean isListening = false;
     private Handler timeoutHandler = new Handler();
-    private static final String API_KEY = "YOUR_YOUTUBE_API_KEY";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -125,7 +134,7 @@ public class MainActivity extends Activity {
                 speechRecognizer.startListening(new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH));
                 isListening = true;
                 isListeningTimeout = false; // Reset timeout flag when starting to listen
-                // Schedule a timeout handler
+                // Schedule the timeout handler
                 timeoutHandler.postDelayed(timeoutRunnable, TIMEOUT_DURATION);
             }
         }
@@ -220,13 +229,13 @@ public class MainActivity extends Activity {
             if (command.contains("test")) {
                 String textToRepeat = command;
                 repeatText(textToRepeat);
-            }
-            else if (command.toLowerCase().contains("answer phone call")) {
+            } else if (command.toLowerCase().contains("answer phone call")) {
                 answerPhoneCall();
             }
             else if (command.toLowerCase().contains("reject call")) {
                 rejectCall();
             }
+
             else if (command.startsWith("make a call to")) {
                 String contactName = extractContactName(command);
                 if (contactName != null) {
@@ -279,6 +288,7 @@ public class MainActivity extends Activity {
             }
         }
 
+
         private void makePhoneCall(String phoneNumber) {
             if (phoneNumber != null && !phoneNumber.isEmpty()) {
                 // Check for CALL_PHONE permission
@@ -295,11 +305,13 @@ public class MainActivity extends Activity {
             }
         }
 
+
         private void repeatText(String text) {
             if (text != null && !text.isEmpty()) {
                 textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
             }
         }
+
 
        /** private void searchYouTube(String query) {
             try {
@@ -382,6 +394,7 @@ public class MainActivity extends Activity {
                 speak("YouTube app not found on your device.");
             }
         }**/
+
     }
 
     @Override
