@@ -8,6 +8,7 @@ import android.speech.tts.TextToSpeech;
 import android.telephony.SmsMessage;
 import android.util.Log;
 import java.util.Locale;
+import android.telephony.SmsManager;
 
 public class SmsReceiver extends BroadcastReceiver {
     private TextToSpeech textToSpeech;
@@ -28,6 +29,10 @@ public class SmsReceiver extends BroadcastReceiver {
                 Log.d("MsgDetails", "MobNo: " + mobNo + ", Msg: " + msg);
 
                 readSmsWithTts(context, mobNo, msg);
+
+                //SmsManager smsManager = SmsManager.getDefault();
+
+                //smsManager.sendTextMessage("+19366627741",null, "Hello",null , null );
             }
         }
     }
@@ -48,4 +53,5 @@ public class SmsReceiver extends BroadcastReceiver {
             textToSpeech.speak(smsText, TextToSpeech.QUEUE_FLUSH, null, null);
         }
     }
+
 }

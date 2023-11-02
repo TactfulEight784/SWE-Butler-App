@@ -63,6 +63,8 @@ public class MainActivity extends Activity {
     private final int PERMISSIONS_REQUEST_CALL_PHONE = 2;
     private final int CALL_SCREENING_PERMISSION_REQUEST = 3;
     private final int PERMISSIONS_REQUEST_SEND_SMS = 4;
+    private final int PERMISSIONS_REQUEST_RECEIVE_SMS = 5;
+    private final int PERMISSIONS_REQUEST_READ_SMS = 6;
 
     private String keyword = "destroy";
     private boolean isListening = false;
@@ -90,6 +92,12 @@ public class MainActivity extends Activity {
         });
         commandProcessor = new CommandProcessor(textToSpeech, this);
         checkAndRequestCallScreeningPermission();
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECEIVE_SMS}, PERMISSIONS_REQUEST_RECEIVE_SMS);
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS}, PERMISSIONS_REQUEST_READ_SMS);
+        }
         telecomManager = (TelecomManager) getSystemService(Context.TELECOM_SERVICE);
         dbHelper.getWritableDatabase("EC4A783A23191FA19A2EB69864849");
         String name = "Izaiah Fleming";
@@ -255,27 +263,30 @@ public class MainActivity extends Activity {
                 } else {
                     speak("Contact name not recognized. Please provide a valid contact name.");
                 }
+            }else if (command.startsWith("send a text to")) {
+                String recipientName = extractContactName(command);
+                if (recipientName != null) {
+                    String phoneNumber = getPhoneNumberFromContact(recipientName);
+                    if (phoneNumber != null) {
+                        String message = extractMessage(command);
+                        if (message != null) {
+                            sendSms(phoneNumber, message);
+                        } else {
+                            speak("Message not found in the command. Please provide a message to send.");
+                        }
+                    } else {
+                        speak("Contact not found. Please provide a valid contact name.");
+                    }
+                } else {
+                    speak("Contact name not recognized. Please provide a valid contact name.");
+                }
             }
             else if (command.startsWith("search YouTube for")) {
                 String query = command.substring("search YouTube for".length()).trim();
                 //searchYouTube(query);
             }
-            else if (command.startsWith("send a text to")) {
-                String phoneNumber = extractContactName(command);
-                if (phoneNumber != null) {
-                    String message = extractMessage(command);
-                    if (message != null) {
-                        commandProcessor.sendSms(phoneNumber, message);
-                    } else {
-                        speak("Please provide a valid message to send.");
-                    }
-                }
-                else {
-                    speak("Contact name not recognized. Please provide a valid contact name.");
-                }
-            }
             else {
-                speak("Command not recognized");
+
             }
         }
 
@@ -309,7 +320,6 @@ public class MainActivity extends Activity {
             }
         }
 
-
         private void makePhoneCall(String phoneNumber) {
             if (phoneNumber != null && !phoneNumber.isEmpty()) {
                 // Check for CALL_PHONE permission
@@ -332,18 +342,18 @@ public class MainActivity extends Activity {
                 textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
             }
         }
-        public void sendSms(String phoneNumber, String message) {
-            // Check if the app has the SEND_SMS permission
+        private void sendSms(String phoneNumber, String message) {
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
                 SmsManager smsManager = SmsManager.getDefault();
                 smsManager.sendTextMessage(phoneNumber, null, message, null, null);
-                speak("Text sent to " + phoneNumber);
+                speak("SMS sent to " + phoneNumber + ": " + message);
             } else {
                 // Request SEND_SMS permission from the user
                 ActivityCompat.requestPermissions((Activity) context, new String[]{Manifest.permission.SEND_SMS}, PERMISSIONS_REQUEST_SEND_SMS);
-                // The actual sending of SMS should be handled after the permission is granted in onRequestPermissionsResult
+                speak("Permission to send SMS is required.");
             }
         }
+
 
         /** private void searchYouTube(String query) {
          try {
@@ -396,17 +406,17 @@ public class MainActivity extends Activity {
             }
         }
         private String extractMessage(String command) {
-            // Define a regular expression pattern to match a message enclosed in double quotes
-            String messagePattern = "\"([^\"]*)\"";
-
-            Pattern pattern = Pattern.compile(messagePattern);
-            Matcher matcher = pattern.matcher(command);
-
-            if (matcher.find()) {
-                return matcher.group(1);
-            } else {
-                return null; // Message not found in the command
+            // Check if the command contains the word "message"
+            if (command.toLowerCase().contains("message")) {
+                // If "message" is found, extract the text after it
+                int messageIndex = command.toLowerCase().indexOf("message");
+                if (messageIndex != -1) {
+                    return command.substring(messageIndex + "message".length()).trim();
+                }
             }
+
+            // If the message is not found, return null
+            return null;
         }
 
         @SuppressLint("Range")
@@ -465,15 +475,19 @@ public class MainActivity extends Activity {
             }
         }else if (requestCode == PERMISSIONS_REQUEST_SEND_SMS) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted. You can now send the SMS.
-                // Use phoneNumberToSend and messageToSend based on your app logic.
-                commandProcessor.sendSms("1234567890", "Hello, This is a test text.");
+                // Permission granted. You can now send SMS.
+                commandProcessor.sendSms("1234567890", "message");
             } else {
                 // Permission denied. Handle this case (e.g., show a message to the user).
+                // You may not be able to send SMS without the permission.
                 speak("Permission to send SMS was denied.");
             }
+        }else {
+            // Handle other permission requests, if any
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
+    @SuppressLint("MissingPermission")
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
