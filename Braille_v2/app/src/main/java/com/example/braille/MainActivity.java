@@ -17,7 +17,9 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
 import android.telecom.TelecomManager;
+import android.telephony.SmsManager;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 
@@ -33,6 +35,7 @@ import com.google.api.services.youtube.model.SearchResultSnippet;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -60,9 +63,15 @@ public class MainActivity extends Activity {
     private final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
     private final int PERMISSIONS_REQUEST_CALL_PHONE = 2;
     private final int CALL_SCREENING_PERMISSION_REQUEST = 3;
+    private final int PERMISSIONS_REQUEST_SEND_SMS = 4;
+    private final int PERMISSIONS_REQUEST_RECEIVE_SMS = 5;
+    private final int PERMISSIONS_REQUEST_READ_SMS = 6;
+
     private String keyword = "destroy";
     private boolean isListening = false;
     private Handler timeoutHandler = new Handler();
+    private TelecomManager telecomManager;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,6 +93,13 @@ public class MainActivity extends Activity {
         });
         commandProcessor = new CommandProcessor(textToSpeech, this);
         checkAndRequestCallScreeningPermission();
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECEIVE_SMS}, PERMISSIONS_REQUEST_RECEIVE_SMS);
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS}, PERMISSIONS_REQUEST_READ_SMS);
+        }
+        telecomManager = (TelecomManager) getSystemService(Context.TELECOM_SERVICE);
         dbHelper.getWritableDatabase("EC4A783A23191FA19A2EB69864849");
         String name = "Izaiah Fleming";
         String email = "IxF69@gmail.com";
@@ -248,13 +264,34 @@ public class MainActivity extends Activity {
                 } else {
                     speak("Contact name not recognized. Please provide a valid contact name.");
                 }
+            }else if (command.startsWith("send a text to")) {
+                String recipientName = extractContactName(command);
+                if (recipientName != null) {
+                    String phoneNumber = getPhoneNumberFromContact(recipientName);
+                    if (phoneNumber != null) {
+                        String message = extractMessage(command);
+                        if (message != null) {
+                            sendSms(phoneNumber, message);
+                        } else {
+                            speak("Message not found in the command. Please provide a message to send.");
+                        }
+                    } else {
+                        speak("Contact not found. Please provide a valid contact name.");
+                    }
+                } else {
+                    speak("Contact name not recognized. Please provide a valid contact name.");
+                }
             }
             else if (command.startsWith("search YouTube for")) {
                 String query = command.substring("search YouTube for".length()).trim();
                 //searchYouTube(query);
             }
+            else if(command.toLowerCase().contains("what time is it")) {
+                // Command to read the current time
+                readCurrentTime();
+            }
             else {
-                speak("Command not recognized");
+
             }
         }
 
@@ -288,7 +325,6 @@ public class MainActivity extends Activity {
             }
         }
 
-
         private void makePhoneCall(String phoneNumber) {
             if (phoneNumber != null && !phoneNumber.isEmpty()) {
                 // Check for CALL_PHONE permission
@@ -311,89 +347,134 @@ public class MainActivity extends Activity {
                 textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
             }
         }
-
-
-       /** private void searchYouTube(String query) {
-            try {
-                // Create a GoogleCredential using your API key
-                GoogleCredential credential = new GoogleCredential().setAccessToken(API_KEY);
-
-                // Initialize the YouTube object
-                YouTube youtube = new YouTube.Builder(credential.getTransport(), credential.getJsonFactory(), null)
-                        .setApplicationName("YouTubeSearchApp")
-                        .build();
-
-                // Call the YouTube API to perform the search
-                YouTube.Search.List search = youtube.search().list(Collections.singletonList("id,snippet"));
-                search.setKey("YOUR_API_KEY"); // Note: You have already set the API key above, so this line might not be needed.
-                search.setQ(query);
-                search.setType(Collections.singletonList("video"));
-
-                SearchListResponse searchResponse = search.execute();
-                List<SearchResult> searchResults = searchResponse.getItems();
-
-                if (searchResults != null && !searchResults.isEmpty()) {
-                    SearchResult firstResult = searchResults.get(0);
-                    SearchResultSnippet snippet = firstResult.getSnippet();
-                    String videoId = firstResult.getId().getVideoId();
-                    String title = snippet.getTitle();
-                    String description = snippet.getDescription();
-
-                    // Play the first search result
-                    playYouTubeVideo(videoId);
-                    speak("Playing video: " + title + ". Description: " + description);
-                } else {
-                    speak("No matching videos found on YouTube.");
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }**/
-       private String extractContactName(String command) {
-           // Define a regular expression pattern to match names (assuming first and last name)
-           String namePattern = "([A-Z][a-z]+)\\s+([A-Z][a-z]+)";
-           Pattern pattern = Pattern.compile(namePattern);
-           Matcher matcher = pattern.matcher(command);
-
-           if (matcher.find()) {
-               // If a name is found return it
-               return matcher.group(0);
-           } else {
-               // No name found in the command
-               return null;
-           }
-       }
-       @SuppressLint("Range")
-       private String getPhoneNumberFromContact(String contactName) {
-           ContentResolver contentResolver = getContentResolver();
-           String phoneNumber = null;
-
-           Uri uri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
-           String[] projection = {ContactsContract.CommonDataKinds.Phone.NUMBER};
-           String selection = ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " = ?";
-           String[] selectionArgs = {contactName};
-
-           Cursor cursor = contentResolver.query(uri, projection, selection, selectionArgs, null);
-
-           if (cursor != null && cursor.moveToFirst()) {
-               phoneNumber = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-               cursor.close();
-           }
-
-           return phoneNumber;
-       }
-
-       /** private void playYouTubeVideo(String videoId) {
-            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=" + videoId));
-            intent.setPackage("com.google.android.youtube");
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-            if (intent.resolveActivity(context.getPackageManager()) != null) {
-                context.startActivity(intent);
+        private void sendSms(String phoneNumber, String message) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
+                SmsManager smsManager = SmsManager.getDefault();
+                smsManager.sendTextMessage(phoneNumber, null, message, null, null);
+                speak("SMS sent to " + phoneNumber + ": " + message);
             } else {
-                speak("YouTube app not found on your device.");
+                // Request SEND_SMS permission from the user
+                ActivityCompat.requestPermissions((Activity) context, new String[]{Manifest.permission.SEND_SMS}, PERMISSIONS_REQUEST_SEND_SMS);
+                speak("Permission to send SMS is required.");
             }
-        }**/
+        }
+
+        public void readCurrentTime() {
+            Calendar calendar = Calendar.getInstance();
+            int hour = calendar.get(Calendar.HOUR_OF_DAY);
+            int minute = calendar.get(Calendar.MINUTE);
+
+            String amOrPm;
+            if (hour < 12) {
+                amOrPm = "AM";
+            } else {
+                amOrPm = "PM";
+                if (hour > 12) {
+                    hour -= 12;
+                }
+            }
+
+            String timeToSpeak = String.format(Locale.US, "The current time is %02d:%02d %s", hour, minute, amOrPm);
+
+            speak(timeToSpeak);
+        }
+
+
+        /** private void searchYouTube(String query) {
+         try {
+         // Create a GoogleCredential using your API key
+         GoogleCredential credential = new GoogleCredential().setAccessToken(API_KEY);
+
+         // Initialize the YouTube object
+         YouTube youtube = new YouTube.Builder(credential.getTransport(), credential.getJsonFactory(), null)
+         .setApplicationName("YouTubeSearchApp")
+         .build();
+
+         // Call the YouTube API to perform the search
+         YouTube.Search.List search = youtube.search().list(Collections.singletonList("id,snippet"));
+         search.setKey("YOUR_API_KEY"); // Note: You have already set the API key above, so this line might not be needed.
+         search.setQ(query);
+         search.setType(Collections.singletonList("video"));
+
+         SearchListResponse searchResponse = search.execute();
+         List<SearchResult> searchResults = searchResponse.getItems();
+
+         if (searchResults != null && !searchResults.isEmpty()) {
+         SearchResult firstResult = searchResults.get(0);
+         SearchResultSnippet snippet = firstResult.getSnippet();
+         String videoId = firstResult.getId().getVideoId();
+         String title = snippet.getTitle();
+         String description = snippet.getDescription();
+
+         // Play the first search result
+         playYouTubeVideo(videoId);
+         speak("Playing video: " + title + ". Description: " + description);
+         } else {
+         speak("No matching videos found on YouTube.");
+         }
+         } catch (IOException e) {
+         e.printStackTrace();
+         }
+         }**/
+        private String extractContactName(String command) {
+            // Define a regular expression pattern to match names (assuming first and last name)
+            String namePattern = "([A-Z][a-z]+)\\s+([A-Z][a-z]+)";
+            Pattern pattern = Pattern.compile(namePattern);
+            Matcher matcher = pattern.matcher(command);
+
+            if (matcher.find()) {
+                // If a name is found return it
+                return matcher.group(0);
+            } else {
+                // No name found in the command
+                return null;
+            }
+        }
+        private String extractMessage(String command) {
+            // Check if the command contains the word "message"
+            if (command.toLowerCase().contains("message")) {
+                // If "message" is found, extract the text after it
+                int messageIndex = command.toLowerCase().indexOf("message");
+                if (messageIndex != -1) {
+                    return command.substring(messageIndex + "message".length()).trim();
+                }
+            }
+
+            // If the message is not found, return null
+            return null;
+        }
+
+        @SuppressLint("Range")
+        private String getPhoneNumberFromContact(String contactName) {
+            ContentResolver contentResolver = getContentResolver();
+            String phoneNumber = null;
+
+            Uri uri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
+            String[] projection = {ContactsContract.CommonDataKinds.Phone.NUMBER};
+            String selection = ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " = ?";
+            String[] selectionArgs = {contactName};
+
+            Cursor cursor = contentResolver.query(uri, projection, selection, selectionArgs, null);
+
+            if (cursor != null && cursor.moveToFirst()) {
+                phoneNumber = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                cursor.close();
+            }
+
+            return phoneNumber;
+        }
+
+        /** private void playYouTubeVideo(String videoId) {
+         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=" + videoId));
+         intent.setPackage("com.google.android.youtube");
+         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+         if (intent.resolveActivity(context.getPackageManager()) != null) {
+         context.startActivity(intent);
+         } else {
+         speak("YouTube app not found on your device.");
+         }
+         }**/
 
     }
 
@@ -417,9 +498,44 @@ public class MainActivity extends Activity {
                 // You may not be able to make phone calls without the permission.
                 speak("Permission to make phone calls was denied.");
             }
+        }else if (requestCode == PERMISSIONS_REQUEST_SEND_SMS) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission granted. You can now send SMS.
+                commandProcessor.sendSms("1234567890", "message");
+            } else {
+                // Permission denied. Handle this case (e.g., show a message to the user).
+                // You may not be able to send SMS without the permission.
+                speak("Permission to send SMS was denied.");
+            }
+        }else {
+            // Handle other permission requests, if any
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
-
+    @SuppressLint("MissingPermission")
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ANSWER_PHONE_CALLS) == PackageManager.PERMISSION_GRANTED) {
+                if (telecomManager != null && telecomManager.isInCall()) {
+                    try {
+                        telecomManager.endCall();
+                        speak("Call ended.");
+                    } catch (SecurityException e) {
+                        // Handle SecurityException (permission denied) appropriately
+                        speak("Permission to end phone calls was denied.");
+                    }
+                } else {
+                    speak("No active call to end.");
+                }
+            } else {
+                // You don't have the necessary permission, request it from the user
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ANSWER_PHONE_CALLS}, PERMISSIONS_REQUEST_CALL_PHONE);
+            }
+            return true; // Consume the event to prevent the system's volume control behavior
+        }
+        return super.onKeyDown(keyCode, event);
+    }
     @Override
     protected void onDestroy() {
         if (textToSpeech != null) {
