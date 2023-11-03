@@ -4,11 +4,27 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4f12f5f5-ddeb-4828-88f3-a0897010fab3" name="Changes" comment="Added function to app, like make phone call and search YouTube" />
+    <list default="true" id="4f12f5f5-ddeb-4828-88f3-a0897010fab3" name="Changes" comment="Added API key">
+      <change afterPath="$PROJECT_DIR$/settings.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ExternalProjectsManager">
+    <system id="GRADLE">
+      <state>
+        <projects_view>
+          <tree_state>
+            <expand />
+            <select />
+          </tree_state>
+        </projects_view>
+      </state>
+    </system>
   </component>
   <component name="Git.Settings">
     <option name="PUSH_TAGS">
@@ -42,10 +58,12 @@
     "RunOnceActivity.cidr.known.project.marker": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "TODO_SCOPE": "All Places",
+    "android.gradle.sync.needed": "true",
     "cidr.known.project.marker": "true",
+    "com.android.tools.idea.devicemanager.tab": "Physical",
     "com.google.services.firebase.aqiPopupShown": "true",
     "dart.analysis.tool.window.visible": "false",
-    "last_opened_file_path": "C:/Users/joshu/OneDrive/Documents/SWE-Butler-App",
+    "last_opened_file_path": "C:/Users/joshu/Documents/SWE-Butler-App",
     "project.structure.last.edited": "SDKs",
     "project.structure.proportion": "0.0",
     "project.structure.side.proportion": "0.0",
@@ -83,12 +101,20 @@
       <option name="project" value="LOCAL" />
       <updated>1698078406751</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Added API key">
+      <created>1698079165903</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1698079165903</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
     <MESSAGE value="Added function to app, like make phone call and search YouTube" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added function to app, like make phone call and search YouTube" />
+    <MESSAGE value="Added API key" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added API key" />
   </component>
 </project>
