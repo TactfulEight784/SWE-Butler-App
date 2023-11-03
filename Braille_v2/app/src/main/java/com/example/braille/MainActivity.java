@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -27,28 +28,15 @@ import android.widget.Button;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
-import com.google.api.services.youtube.YouTube;
-import com.google.api.services.youtube.model.SearchListResponse;
-import com.google.api.services.youtube.model.SearchResult;
-import com.google.api.services.youtube.model.SearchResultSnippet;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.Calendar;
+
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-import android.os.Handler;
-
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-
-import java.util.ArrayList;
-import java.util.Locale;
 
 
 public class MainActivity extends Activity {
@@ -70,6 +58,8 @@ public class MainActivity extends Activity {
     private boolean isListening = false;
     private Handler timeoutHandler = new Handler();
     private TelecomManager telecomManager;
+    private boolean isVolumeUpPressed = false;
+    private boolean isVolumeDownPressed = false;
 
 
     @Override
@@ -285,6 +275,10 @@ public class MainActivity extends Activity {
                 String query = command.substring("search YouTube for".length()).trim();
                 //searchYouTube(query);
             }
+            else if(command.toLowerCase().contains("what time is it")) {
+                // Command to read the current time
+                readCurrentTime();
+            }
             else {
 
             }
@@ -310,7 +304,7 @@ public class MainActivity extends Activity {
                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.ANSWER_PHONE_CALLS) == PackageManager.PERMISSION_GRANTED) {
                     if (telecomManager != null) {
                         telecomManager.endCall();
-                        speak("Call rejected.");
+                        speak("Call ended or rejected.");
                     }
                 } else {
                     speak("Permission to end phone calls is not granted.");
@@ -355,42 +349,26 @@ public class MainActivity extends Activity {
         }
 
 
-        /** private void searchYouTube(String query) {
-         try {
-         // Create a GoogleCredential using your API key
-         GoogleCredential credential = new GoogleCredential().setAccessToken(API_KEY);
+        public void readCurrentTime() {
+            Calendar calendar = Calendar.getInstance();
+            int hour = calendar.get(Calendar.HOUR_OF_DAY);
+            int minute = calendar.get(Calendar.MINUTE);
 
-         // Initialize the YouTube object
-         YouTube youtube = new YouTube.Builder(credential.getTransport(), credential.getJsonFactory(), null)
-         .setApplicationName("YouTubeSearchApp")
-         .build();
+            String amOrPm;
+            if (hour < 12) {
+                amOrPm = "AM";
+            } else {
+                amOrPm = "PM";
+                if (hour > 12) {
+                    hour -= 12;
+                }
+            }
 
-         // Call the YouTube API to perform the search
-         YouTube.Search.List search = youtube.search().list(Collections.singletonList("id,snippet"));
-         search.setKey("YOUR_API_KEY"); // Note: You have already set the API key above, so this line might not be needed.
-         search.setQ(query);
-         search.setType(Collections.singletonList("video"));
+            String timeToSpeak = String.format(Locale.US, "The current time is %02d:%02d %s", hour, minute, amOrPm);
 
-         SearchListResponse searchResponse = search.execute();
-         List<SearchResult> searchResults = searchResponse.getItems();
+            speak(timeToSpeak);
+        }
 
-         if (searchResults != null && !searchResults.isEmpty()) {
-         SearchResult firstResult = searchResults.get(0);
-         SearchResultSnippet snippet = firstResult.getSnippet();
-         String videoId = firstResult.getId().getVideoId();
-         String title = snippet.getTitle();
-         String description = snippet.getDescription();
-
-         // Play the first search result
-         playYouTubeVideo(videoId);
-         speak("Playing video: " + title + ". Description: " + description);
-         } else {
-         speak("No matching videos found on YouTube.");
-         }
-         } catch (IOException e) {
-         e.printStackTrace();
-         }
-         }**/
         private String extractContactName(String command) {
             // Define a regular expression pattern to match names (assuming first and last name)
             String namePattern = "([A-Z][a-z]+)\\s+([A-Z][a-z]+)";
@@ -439,18 +417,6 @@ public class MainActivity extends Activity {
             return phoneNumber;
         }
 
-        /** private void playYouTubeVideo(String videoId) {
-         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=" + videoId));
-         intent.setPackage("com.google.android.youtube");
-         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-         if (intent.resolveActivity(context.getPackageManager()) != null) {
-         context.startActivity(intent);
-         } else {
-         speak("YouTube app not found on your device.");
-         }
-         }**/
-
     }
 
     @Override
@@ -467,8 +433,7 @@ public class MainActivity extends Activity {
         } else if (requestCode == PERMISSIONS_REQUEST_CALL_PHONE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Permission granted. You can now make the phone call.
-                commandProcessor.makePhoneCall("1234567890"); // Replace with the actual phone number you want to call.
-            } else {
+                commandProcessor.makePhoneCall("1234567890"); // Replace with the actual phone number you want to call.            } else {
                 // Permission denied. Handle this case (e.g., show a message to the user).
                 // You may not be able to make phone calls without the permission.
                 speak("Permission to make phone calls was denied.");
@@ -487,29 +452,30 @@ public class MainActivity extends Activity {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
-    @SuppressLint("MissingPermission")
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ANSWER_PHONE_CALLS) == PackageManager.PERMISSION_GRANTED) {
-                if (telecomManager != null && telecomManager.isInCall()) {
-                    try {
-                        telecomManager.endCall();
-                        speak("Call ended.");
-                    } catch (SecurityException e) {
-                        // Handle SecurityException (permission denied) appropriately
-                        speak("Permission to end phone calls was denied.");
-                    }
-                } else {
-                    speak("No active call to end.");
-                }
-            } else {
-                // You don't have the necessary permission, request it from the user
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ANSWER_PHONE_CALLS}, PERMISSIONS_REQUEST_CALL_PHONE);
-            }
-            return true; // Consume the event to prevent the system's volume control behavior
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
+            isVolumeUpPressed = true;
+        } else if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            isVolumeDownPressed = true;
         }
+
+        if (isVolumeUpPressed && isVolumeDownPressed) {
+            // Both volume buttons are pressed simultaneously, end the call
+            commandProcessor.rejectCall();
+            return true; // Consumes the key event
+        }
+
         return super.onKeyDown(keyCode, event);
+    }
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
+            isVolumeUpPressed = false;
+        } else if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            isVolumeDownPressed = false;
+        }
+        return super.onKeyUp(keyCode, event);
     }
     @Override
     protected void onDestroy() {
