@@ -29,10 +29,6 @@ public class SmsReceiver extends BroadcastReceiver {
                 Log.d("MsgDetails", "MobNo: " + mobNo + ", Msg: " + msg);
 
                 readSmsWithTts(context, mobNo, msg);
-
-                //SmsManager smsManager = SmsManager.getDefault();
-
-                //smsManager.sendTextMessage("+19366627741",null, "Hello",null , null );
             }
         }
     }
