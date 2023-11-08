@@ -6,6 +6,11 @@ android {
     androidResources {
         generateLocaleConfig = true
     }
+    defaultConfig {
+        resourceConfigurations += arrayOf("am", "af", "ar", "as", "az", "be", "bg", "bn", "bs", "ca", "cs", "da", "de", "el", "en-AU", "en-CA", "en-GB", "en-IN", "en-US", "en-XA", "es", "es-US", "et", "eu", "fa", "fi",
+            "fr", "fr-CA", "gl", "gu", "hi", "hr", "hu", "hy", "in", "is", "it", "iw", "ja", "ka", "kk", "km", "kn", "ko", "ky", "lo", "lt", "lv", "mk", "ml", "mn", "mr", "ms", "my", "my-MM", "nb", "ne", "nl", "or", "pa", "pl",
+            "pt-BR", "pt-PT", "ro", "ru", "si", "sk", "sl", "sq", "sr", "sr-Latn", "sv", "sw", "ta", "te", "th", "tl", "tr", "uk", "ur", "uz", "vi", "zh-CN", "zh-HK", "zh-TW", "zu")
+    }
     namespace = "com.example.braille"
     compileSdk = 33
     packagingOptions {
