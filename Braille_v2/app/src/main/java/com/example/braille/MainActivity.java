@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -24,14 +23,13 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 
-
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-
+import java.util.Date;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -60,7 +58,7 @@ public class MainActivity extends Activity {
     private TelecomManager telecomManager;
     private boolean isVolumeUpPressed = false;
     private boolean isVolumeDownPressed = false;
-
+    private boolean systemLanguageIsSpanish;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,7 +78,10 @@ public class MainActivity extends Activity {
                 }
             }
         });
-        commandProcessor = new CommandProcessor(textToSpeech, this);
+        String systemlanguage = Locale.getDefault().getLanguage();
+        systemLanguageIsSpanish = systemlanguage.equals("es");
+
+        commandProcessor = new CommandProcessor(textToSpeech, this,systemLanguageIsSpanish);
         checkAndRequestCallScreeningPermission();
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECEIVE_SMS}, PERMISSIONS_REQUEST_RECEIVE_SMS);
@@ -110,7 +111,11 @@ public class MainActivity extends Activity {
             @Override
             public void onInit(int status) {
                 if (status == TextToSpeech.SUCCESS) {
-                    textToSpeech.setLanguage(Locale.US);
+                    if(systemLanguageIsSpanish){
+                        textToSpeech.setLanguage(new Locale("es","ES"));
+                    }else {
+                        textToSpeech.setLanguage(Locale.US);
+                    }
                 } else {
                     Log.e("TextToSpeech", "Initialization failed");
                 }
@@ -222,26 +227,77 @@ public class MainActivity extends Activity {
         private TextToSpeech textToSpeech;
         private Context context;
         private TelecomManager telecomManager;
+        private boolean isSpanish;
 
-        public CommandProcessor(TextToSpeech textToSpeech, Context context) {
+        public CommandProcessor(TextToSpeech textToSpeech, Context context, boolean isSpanish ) {
             this.textToSpeech = textToSpeech;
             this.context = context;
             this.telecomManager = (TelecomManager) context.getSystemService(Context.TELECOM_SERVICE);
+            this.isSpanish = isSpanish;
 
         }
+        public void processCommand(String command){
+            if(isSpanish){
+                processSpanishCommand(command);
+            }else{
+                processEnglishCommand(command);
+            }
+        }
 
-        public void processCommand(String command) {
+        private void processSpanishCommand(String command) {
+            if (command.contains("prueba")) {
+                String textToRepeat = command;
+                repeatText(textToRepeat);
+            } else if (command.toLowerCase().contains("contestar")) {
+                answerPhoneCall();
+            } else if (command.toLowerCase().contains("rechazar")) {
+                rejectCall();
+            } else if (command.contains("Llamar")) {
+                String contactName = extractContactName(command);
+                if (contactName != null) {
+                    String phoneNumber = getPhoneNumberFromContact(contactName);
+                    if (phoneNumber != null) {
+                        makePhoneCall(phoneNumber);
+                    } else {
+                        speak("No se encontro un contacto con ese nombre. Favor de decir un nombre de contacto válido.");
+                    }
+                } else {
+                    speak("El nombre de contacto no es reconocido. Por favor diga un nombre válido.");
+                }
+            } else if (command.contains("Enviar mensaje")) {
+                String recipientName = extractContactName(command);
+                if (recipientName != null) {
+                    String phoneNumber = getPhoneNumberFromContact(recipientName);
+                    if (phoneNumber != null) {
+                        String message = extractMessage(command);
+                        if (message != null) {
+                            sendSms(phoneNumber, message);
+                        } else {
+                            speak("No se escucho el mensaje. Por favor, diga un mensaje para enviar.");
+                        }
+                    } else {
+                        speak("No se encontro un contacto con ese nombre. Favor de decir un nombre de contacto válido.");
+                    }
+                } else {
+                    speak("El nombre de contacto no es reconocido. Por favor diga un nombre válido.");
+                }
+            } else if (command.toLowerCase().contains("qué hora es")) {
+                // Command to read the current time
+                readCurrentTime();
+            }else if(command.toLowerCase().contains("qué fecha es")){
+                tellDate();
+            }
+        }
+
+        private void processEnglishCommand(String command) {
             if (command.contains("test")) {
                 String textToRepeat = command;
                 repeatText(textToRepeat);
-            } else if (command.toLowerCase().contains("answer phone call")) {
+            } else if (command.toLowerCase().contains("answer")) {
                 answerPhoneCall();
-            }
-            else if (command.toLowerCase().contains("reject call")) {
+            } else if (command.toLowerCase().contains("reject")) {
                 rejectCall();
-            }
-
-            else if (command.startsWith("make a call to")) {
+            } else if (command.contains("Call to")) {
                 String contactName = extractContactName(command);
                 if (contactName != null) {
                     String phoneNumber = getPhoneNumberFromContact(contactName);
@@ -253,7 +309,7 @@ public class MainActivity extends Activity {
                 } else {
                     speak("Contact name not recognized. Please provide a valid contact name.");
                 }
-            }else if (command.startsWith("send a text to")) {
+            } else if (command.contains("send text to")) {
                 String recipientName = extractContactName(command);
                 if (recipientName != null) {
                     String phoneNumber = getPhoneNumberFromContact(recipientName);
@@ -270,32 +326,52 @@ public class MainActivity extends Activity {
                 } else {
                     speak("Contact name not recognized. Please provide a valid contact name.");
                 }
-            }
-            else if (command.startsWith("search YouTube for")) {
-                String query = command.substring("search YouTube for".length()).trim();
-                //searchYouTube(query);
-            }
-            else if(command.toLowerCase().contains("what time is it")) {
+            } else if (command.toLowerCase().contains("what time is it")) {
                 // Command to read the current time
                 readCurrentTime();
-            }
-            else {
-
+            }else if(command.toLowerCase().contains("what day is it")){
+                tellDate();
             }
         }
+        private void tellDate() {
+            Date currentDate = new Date();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MMMM d, yyyy", Locale.US);
+            String formattedDate = dateFormat.format(currentDate);
 
+            if(isSpanish){
+                speak("La fecha es " + formattedDate);
+
+            }else{
+                speak("The current date is " + formattedDate);
+            }
+        }
         private void answerPhoneCall() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.ANSWER_PHONE_CALLS) == PackageManager.PERMISSION_GRANTED) {
                     if (telecomManager != null) {
                         telecomManager.acceptRingingCall();
-                        speak("Call answered.");
+                        if(isSpanish){
+                            speak("Llamada contestada.");
+                        }
+                        else {
+                            speak("Call answered.");
+                        }
                     }
                 } else {
-                    speak("Permission to answer phone calls is not granted.");
+                    if(isSpanish){
+                        speak("No se otorga permiso para contestar llamadas telefónicas.");
+                    }
+                    else {
+                        speak("Permission to answer phone calls is not granted.");
+                    }
                 }
             } else {
-                speak("Answering phone calls is not supported on this device.");
+                if(isSpanish){
+                    speak("No se admite contestar llamadas telefónicas en este dispositivo.");
+                }
+                else {
+                    speak("Answering phone calls is not supported on this device.");
+                }
             }
         }
 
@@ -304,13 +380,28 @@ public class MainActivity extends Activity {
                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.ANSWER_PHONE_CALLS) == PackageManager.PERMISSION_GRANTED) {
                     if (telecomManager != null) {
                         telecomManager.endCall();
-                        speak("Call ended or rejected.");
+                        if(isSpanish){
+                            speak("Llamada finalizada o rechazada.");
+                        }
+                        else {
+                            speak("Call ended or rejected.");
+                        }
                     }
                 } else {
-                    speak("Permission to end phone calls is not granted.");
+                    if(isSpanish){
+                        speak("No se otorga permiso para finalizar llamadas telefónicas.");
+                    }
+                    else {
+                        speak("Permission to end phone calls is not granted.");
+                    }
                 }
             } else {
-                speak("Ending phone calls is not supported on this device.");
+                if(isSpanish){
+                    speak("No se admite finalizar llamadas telefónicas en este dispositivo.");
+                }
+                else {
+                    speak("Ending phone calls is not supported on this device.");
+                }
             }
         }
 
@@ -323,10 +414,20 @@ public class MainActivity extends Activity {
                 } else {
                     // Request CALL_PHONE permission from the user
                     ActivityCompat.requestPermissions((Activity) context, new String[]{Manifest.permission.CALL_PHONE}, PERMISSIONS_REQUEST_CALL_PHONE);
-                    speak("Permission to make phone calls is required.");
+                    if(isSpanish){
+                        speak("Se requiere permiso para realizar llamadas telefónicas.");
+                    }
+                    else {
+                        speak("Permission to make phone calls is required.");
+                    }
                 }
             } else {
-                speak("Invalid phone number. Please provide a valid phone number.");
+                if(isSpanish){
+                    speak("Número de teléfono no es válido. Por favor, diga un número de teléfono válido.");
+                }
+                else {
+                    speak("Invalid phone number. Please provide a valid phone number.");
+                }
             }
         }
 
@@ -340,11 +441,21 @@ public class MainActivity extends Activity {
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
                 SmsManager smsManager = SmsManager.getDefault();
                 smsManager.sendTextMessage(phoneNumber, null, message, null, null);
-                speak("SMS sent to " + phoneNumber + ": " + message);
+                if(isSpanish){
+                    speak("Mensaje de texto enviado a " + phoneNumber + ": " + message);
+                }
+                else {
+                    speak("SMS sent to " + phoneNumber + ": " + message);
+                }
             } else {
                 // Request SEND_SMS permission from the user
                 ActivityCompat.requestPermissions((Activity) context, new String[]{Manifest.permission.SEND_SMS}, PERMISSIONS_REQUEST_SEND_SMS);
-                speak("Permission to send SMS is required.");
+                if(isSpanish){
+                    speak("Se requiere permiso para enviar texto.");
+                }
+                else {
+                    speak("Permission to send SMS is required.");
+                }
             }
         }
 
@@ -353,20 +464,38 @@ public class MainActivity extends Activity {
             Calendar calendar = Calendar.getInstance();
             int hour = calendar.get(Calendar.HOUR_OF_DAY);
             int minute = calendar.get(Calendar.MINUTE);
+            if(isSpanish){
 
-            String amOrPm;
-            if (hour < 12) {
-                amOrPm = "AM";
-            } else {
-                amOrPm = "PM";
-                if (hour > 12) {
-                    hour -= 12;
+                String amOrPm;
+                if (hour < 12) {
+                    amOrPm = "AM";
+                } else {
+                    amOrPm = "PM";
+                    if (hour > 12) {
+                        hour -= 12;
+                    }
                 }
+
+                String timeToSpeak = String.format(Locale.US, "La hora actual es %02d:%02d %s", hour, minute, amOrPm);
+
+                speak(timeToSpeak);
+
+            }else {
+
+                String amOrPm;
+                if (hour < 12) {
+                    amOrPm = "AM";
+                } else {
+                    amOrPm = "PM";
+                    if (hour > 12) {
+                        hour -= 12;
+                    }
+                }
+
+                String timeToSpeak = String.format(Locale.US, "The current time is %02d:%02d %s", hour, minute, amOrPm);
+
+                speak(timeToSpeak);
             }
-
-            String timeToSpeak = String.format(Locale.US, "The current time is %02d:%02d %s", hour, minute, amOrPm);
-
-            speak(timeToSpeak);
         }
 
         private String extractContactName(String command) {
@@ -384,8 +513,15 @@ public class MainActivity extends Activity {
             }
         }
         private String extractMessage(String command) {
-            // Check if the command contains the word "message"
-            if (command.toLowerCase().contains("message")) {
+            if (command.toLowerCase().contains("mensaje")) {
+                int messageIndex = command.toLowerCase().indexOf("mensaje");
+                if (messageIndex != -1) {
+                    return command.substring(messageIndex + "mensaje".length()).trim();
+                }
+
+
+                // Check if the command contains the word "message"
+            }else if (command.toLowerCase().contains("message")) {
                 // If "message" is found, extract the text after it
                 int messageIndex = command.toLowerCase().indexOf("message");
                 if (messageIndex != -1) {
@@ -424,28 +560,39 @@ public class MainActivity extends Activity {
         if (requestCode == CALL_SCREENING_PERMISSION_REQUEST) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Permission granted. Implement your call answering logic here.
-                commandProcessor.answerPhoneCall();
             } else {
                 // Permission denied. Handle this case (e.g., show a message to the user).
                 // You may not be able to answer phone calls without the permission.
-                speak("Permission to answer phone calls was denied.");
+                if(systemLanguageIsSpanish){
+                    speak("Se denegó el permiso para contestar llamadas telefónicas");
+                }
+                else {
+                    speak("Permission to answer phone calls was denied.");
+                }
             }
         } else if (requestCode == PERMISSIONS_REQUEST_CALL_PHONE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Permission granted. You can now make the phone call.
-                commandProcessor.makePhoneCall("1234567890"); // Replace with the actual phone number you want to call.            } else {
+            }else{
                 // Permission denied. Handle this case (e.g., show a message to the user).
                 // You may not be able to make phone calls without the permission.
-                speak("Permission to make phone calls was denied.");
+                if(systemLanguageIsSpanish){
+                    speak("Se denegó el permiso para realizar llamadas telefónicas");
+                }
+                else {
+                    speak("Permission to make phone calls was denied.");
+                }
             }
         }else if (requestCode == PERMISSIONS_REQUEST_SEND_SMS) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Permission granted. You can now send SMS.
-                commandProcessor.sendSms("1234567890", "message");
             } else {
                 // Permission denied. Handle this case (e.g., show a message to the user).
-                // You may not be able to send SMS without the permission.
-                speak("Permission to send SMS was denied.");
+                if(systemLanguageIsSpanish){
+                    speak("Se denegó el permiso para enviar SMS");
+                }else {
+                    speak("Permission to send SMS was denied.");
+                }
             }
         }else {
             // Handle other permission requests, if any
