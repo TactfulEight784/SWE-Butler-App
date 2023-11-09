@@ -559,10 +559,7 @@ public class MainActivity extends Activity {
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == CALL_SCREENING_PERMISSION_REQUEST) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted. Implement your call answering logic here.
             } else {
-                // Permission denied. Handle this case (e.g., show a message to the user).
-                // You may not be able to answer phone calls without the permission.
                 if(systemLanguageIsSpanish){
                     speak("Se denegó el permiso para contestar llamadas telefónicas");
                 }
@@ -574,8 +571,6 @@ public class MainActivity extends Activity {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Permission granted. You can now make the phone call.
             }else{
-                // Permission denied. Handle this case (e.g., show a message to the user).
-                // You may not be able to make phone calls without the permission.
                 if(systemLanguageIsSpanish){
                     speak("Se denegó el permiso para realizar llamadas telefónicas");
                 }
@@ -587,7 +582,6 @@ public class MainActivity extends Activity {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Permission granted. You can now send SMS.
             } else {
-                // Permission denied. Handle this case (e.g., show a message to the user).
                 if(systemLanguageIsSpanish){
                     speak("Se denegó el permiso para enviar SMS");
                 }else {
@@ -595,7 +589,6 @@ public class MainActivity extends Activity {
                 }
             }
         }else {
-            // Handle other permission requests, if any
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
