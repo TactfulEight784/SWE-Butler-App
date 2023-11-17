@@ -17,7 +17,7 @@ public class SmsReceiver extends BroadcastReceiver {
     private TextToSpeech textToSpeech;
 
     @Override
-    public void onReceive(Context context, Intent intent) {
+    public void onReceive(Context context, Intent intent) { //when you receive a message this runs
         Bundle bundle = intent.getExtras();
 
         if (bundle != null) {
@@ -41,7 +41,7 @@ public class SmsReceiver extends BroadcastReceiver {
         }
     }
 
-    private void readSmsWithTts(Context context, String mobNo, String msg) {
+    private void readSmsWithTts(Context context, String mobNo, String msg) {    // Reads SMS with text to speech
         String systemLanguage = Locale.getDefault().getLanguage();
         String senderName = getContactName(context, mobNo);
         Locale ttsLocale;
@@ -103,7 +103,7 @@ public class SmsReceiver extends BroadcastReceiver {
             textToSpeech.speak(emailText, TextToSpeech.QUEUE_FLUSH, null, null);
         }
     }
-    private String getContactName(Context context, String phoneNumber) {
+    private String getContactName(Context context, String phoneNumber) { //extracts contact name when getting SMS
         String contactName = null;
 
         String[] projection = new String[]{ContactsContract.PhoneLookup.DISPLAY_NAME};
