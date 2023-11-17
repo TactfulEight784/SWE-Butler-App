@@ -61,16 +61,16 @@ public class MainActivity extends Activity {
     private boolean systemLanguageIsSpanish;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {    //when the app is loaded it runs all of this
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         dbHelper = new DatabaseHelper(this);
         initializeTextToSpeech();
         initializeSpeechRecognizer();
-        Button b = findViewById(R.id.Braille);
+        Button b = findViewById(R.id.Braille);  //sets the button to actually start the listening
         b.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
+            public void onClick(View view) {    //on button click it stats listening
                 if (isListening) {
                     stopListening();
                 } else {
@@ -78,11 +78,12 @@ public class MainActivity extends Activity {
                 }
             }
         });
-        String systemlanguage = Locale.getDefault().getLanguage();
+        String systemlanguage = Locale.getDefault().getLanguage();  //detects system language
         systemLanguageIsSpanish = systemlanguage.equals("es");
 
-        commandProcessor = new CommandProcessor(textToSpeech, this,systemLanguageIsSpanish);
-        checkAndRequestCallScreeningPermission();
+        commandProcessor = new CommandProcessor(textToSpeech, this,systemLanguageIsSpanish);    //makes processor object
+        checkAndRequestCallScreeningPermission();   //checking phone call permissions
+        //checks SMS Permissions
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECEIVE_SMS}, PERMISSIONS_REQUEST_RECEIVE_SMS);
         }
@@ -97,7 +98,7 @@ public class MainActivity extends Activity {
 
         dbHelper.insertData(name, email, phone);
     }
-    private void checkAndRequestCallScreeningPermission() {
+    private void checkAndRequestCallScreeningPermission() { // Checks for call screening requests
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ANSWER_PHONE_CALLS) != PackageManager.PERMISSION_GRANTED) {
                 // Request the ANSWER_PHONE_CALLS permission
@@ -106,7 +107,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void initializeTextToSpeech() {
+    private void initializeTextToSpeech() { // Initializes Text to Speech
         textToSpeech = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
@@ -123,20 +124,20 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void speak(String text) {
+    private void speak(String text) {   // Text to Speech output function
         if (textToSpeech != null) {
             textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
         }
     }
 
-    private void initializeSpeechRecognizer() {
+    private void initializeSpeechRecognizer() { // Initialize input speech recognizer
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
         if (speechRecognizer != null) {
             speechRecognizer.setRecognitionListener(new MyRecognitionListener());
         }
     }
 
-    private void startListening() {
+    private void startListening() { // Function to actually start listening
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSIONS_REQUEST_RECORD_AUDIO);
         } else {
@@ -144,20 +145,20 @@ public class MainActivity extends Activity {
                 speechRecognizer.startListening(new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH));
                 isListening = true;
                 isListeningTimeout = false; // Reset timeout flag when starting to listen
-                // Schedule the timeout handler
-                timeoutHandler.postDelayed(timeoutRunnable, TIMEOUT_DURATION);
+                timeoutHandler.postDelayed(timeoutRunnable, TIMEOUT_DURATION);  // Schedule the timeout handler
+
             }
         }
     }
 
-    private void stopListening() {
+    private void stopListening() {  // Function to stop listening
         if (speechRecognizer != null) {
             speechRecognizer.stopListening();
             isListening = false;
         }
     }
 
-    private Runnable timeoutRunnable = new Runnable() {
+    private Runnable timeoutRunnable = new Runnable() { // Function to restart listener after a timeout
         @Override
         public void run() {
             isListeningTimeout = true;
@@ -166,7 +167,7 @@ public class MainActivity extends Activity {
         }
     };
 
-    private class MyRecognitionListener implements android.speech.RecognitionListener {
+    private class MyRecognitionListener implements android.speech.RecognitionListener { // Basic speech recognition class that is not used
         @Override
         public void onReadyForSpeech(Bundle params) {
             // Called when the recognizer is ready for speech
@@ -198,12 +199,11 @@ public class MainActivity extends Activity {
         }
 
         @Override
-        public void onResults(Bundle results) {
+        public void onResults(Bundle results) { //gets the result from the listener to process it
             ArrayList<String> result = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
             if (result != null && result.size() > 0) {
                 String spokenText = result.get(0);
-                // Process the spoken text (e.g., by sending it to your command processor)
-                commandProcessor.processCommand(spokenText);
+                commandProcessor.processCommand(spokenText);    // Process the spoken text (e.g., by sending it to your command processor)
                 if (spokenText.toLowerCase().contains(keyword)) {
                     stopListening();
                 } else {
@@ -223,11 +223,11 @@ public class MainActivity extends Activity {
         }
     }
 
-    public class CommandProcessor {
+    public class CommandProcessor { //actually class that process the commands
         private TextToSpeech textToSpeech;
         private Context context;
         private TelecomManager telecomManager;
-        private boolean isSpanish;
+        private boolean isSpanish;  //true if default language is spanish
 
         public CommandProcessor(TextToSpeech textToSpeech, Context context, boolean isSpanish ) {
             this.textToSpeech = textToSpeech;
@@ -236,7 +236,7 @@ public class MainActivity extends Activity {
             this.isSpanish = isSpanish;
 
         }
-        public void processCommand(String command){
+        public void processCommand(String command){ // chooses which language commands
             if(isSpanish){
                 processSpanishCommand(command);
             }else{
@@ -244,7 +244,7 @@ public class MainActivity extends Activity {
             }
         }
 
-        private void processSpanishCommand(String command) {
+        private void processSpanishCommand(String command) {    //Spanish commands
             if (command.contains("prueba")) {
                 String textToRepeat = command;
                 repeatText(textToRepeat);
@@ -289,7 +289,7 @@ public class MainActivity extends Activity {
             }
         }
 
-        private void processEnglishCommand(String command) {
+        private void processEnglishCommand(String command) {    //English commands
             if (command.contains("test")) {
                 String textToRepeat = command;
                 repeatText(textToRepeat);
@@ -333,7 +333,7 @@ public class MainActivity extends Activity {
                 tellDate();
             }
         }
-        private void tellDate() {
+        private void tellDate() {   //command to say Date
             Date currentDate = new Date();
             SimpleDateFormat dateFormat = new SimpleDateFormat("MMMM d, yyyy", Locale.US);
             String formattedDate = dateFormat.format(currentDate);
@@ -345,8 +345,9 @@ public class MainActivity extends Activity {
                 speak("The current date is " + formattedDate);
             }
         }
-        private void answerPhoneCall() {
+        private void answerPhoneCall() {    //Command to answer phone call
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                //has to check if it has permissions
                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.ANSWER_PHONE_CALLS) == PackageManager.PERMISSION_GRANTED) {
                     if (telecomManager != null) {
                         telecomManager.acceptRingingCall();
@@ -375,8 +376,9 @@ public class MainActivity extends Activity {
             }
         }
 
-        private void rejectCall() {
+        private void rejectCall() { //Function to reject call
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                //has to check if it has permissions
                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.ANSWER_PHONE_CALLS) == PackageManager.PERMISSION_GRANTED) {
                     if (telecomManager != null) {
                         telecomManager.endCall();
@@ -405,7 +407,7 @@ public class MainActivity extends Activity {
             }
         }
 
-        private void makePhoneCall(String phoneNumber) {
+        private void makePhoneCall(String phoneNumber) {    //Function to make phone call
             if (phoneNumber != null && !phoneNumber.isEmpty()) {
                 // Check for CALL_PHONE permission
                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
@@ -432,12 +434,13 @@ public class MainActivity extends Activity {
         }
 
 
-        private void repeatText(String text) {
+        private void repeatText(String text) {  //used to repeat the text back
             if (text != null && !text.isEmpty()) {
                 textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
             }
         }
-        private void sendSms(String phoneNumber, String message) {
+        private void sendSms(String phoneNumber, String message) {  //used to send SMS
+            //has to check if it has permissions
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
                 SmsManager smsManager = SmsManager.getDefault();
                 smsManager.sendTextMessage(phoneNumber, null, message, null, null);
@@ -460,7 +463,7 @@ public class MainActivity extends Activity {
         }
 
 
-        public void readCurrentTime() {
+        public void readCurrentTime() { //reads current time
             Calendar calendar = Calendar.getInstance();
             int hour = calendar.get(Calendar.HOUR_OF_DAY);
             int minute = calendar.get(Calendar.MINUTE);
@@ -498,7 +501,7 @@ public class MainActivity extends Activity {
             }
         }
 
-        private String extractContactName(String command) {
+        private String extractContactName(String command) { //extracts contact name to be used for calls and messages
             // Define a regular expression pattern to match names (assuming first and last name)
             String namePattern = "([A-Z][a-z]+)\\s+([A-Z][a-z]+)";
             Pattern pattern = Pattern.compile(namePattern);
@@ -512,7 +515,7 @@ public class MainActivity extends Activity {
                 return null;
             }
         }
-        private String extractMessage(String command) {
+        private String extractMessage(String command) { // Extracts the message from the SMS command to send the right thing
             if (command.toLowerCase().contains("mensaje")) {
                 int messageIndex = command.toLowerCase().indexOf("mensaje");
                 if (messageIndex != -1) {
@@ -534,7 +537,7 @@ public class MainActivity extends Activity {
         }
 
         @SuppressLint("Range")
-        private String getPhoneNumberFromContact(String contactName) {
+        private String getPhoneNumberFromContact(String contactName) {  // gets the phone number from the contract name
             ContentResolver contentResolver = getContentResolver();
             String phoneNumber = null;
 
@@ -556,6 +559,7 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    // this is all code to check and get permissions
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == CALL_SCREENING_PERMISSION_REQUEST) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -593,7 +597,7 @@ public class MainActivity extends Activity {
         }
     }
     @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
+    public boolean onKeyDown(int keyCode, KeyEvent event) { //check volume buttons for the end call command
         if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
             isVolumeUpPressed = true;
         } else if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
@@ -609,7 +613,7 @@ public class MainActivity extends Activity {
         return super.onKeyDown(keyCode, event);
     }
     @Override
-    public boolean onKeyUp(int keyCode, KeyEvent event) {
+    public boolean onKeyUp(int keyCode, KeyEvent event) {   // checks volume buttons for a different combination
         if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
             isVolumeUpPressed = false;
         } else if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
