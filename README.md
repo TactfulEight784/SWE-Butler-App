@@ -1,4 +1,6 @@
 # Braille
+  Before we start the Folder that says Braille_v2 is the final version that we made that works as shown in previous demos<br>
+  
   Braille is an application designed to help anyone with visual impairments by performing the basic tasks of a phone such as SMS texting,
   making calls, receiving calls, time checking and more via Text-To-Speech.
 
